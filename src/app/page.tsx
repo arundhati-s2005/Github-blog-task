@@ -21,7 +21,7 @@ export default function Home() {
     setLoggedInUser(null);
   };
   return (
-    <div className="font-sans max-w-xl mx-auto p-6 text-center bg-black shadow-lg rounded-xl mt-10">
+    <div className="font-sans max-w-xl mx-auto p-6 text-center bg-blue-600 shadow-lg rounded-xl mt-10">
       <h1 className="text-5xl font-bold mb-6">
         Blog Home Page  
       </h1>
