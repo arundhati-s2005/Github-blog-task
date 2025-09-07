@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useState } from "react";
 
 interface User {
   username: string;
+  password: string;
 }
 
 interface Comment {
@@ -25,6 +25,7 @@ interface Post {
 }
 
 export default function Home() {
+  const [users, setUsers] = useState<User[]>([]); // Registered users
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [title, setTitle] = useState("");
@@ -32,11 +33,38 @@ export default function Home() {
   const [category, setCategory] = useState("General");
   const [search, setSearch] = useState("");
 
-  // Mock login
-  const handleLogin = (username: string) => setUser({ username });
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignup, setIsSignup] = useState(false);
+
+  // --- AUTHENTICATION ---
+  const handleSignup = () => {
+    if (!username || !password) return alert("Enter all fields");
+    if (users.find((u) => u.username === username))
+      return alert("User already exists!");
+
+    const newUser = { username, password };
+    setUsers([...users, newUser]);
+    setUser(newUser);
+    setUsername("");
+    setPassword("");
+    setIsSignup(false);
+  };
+
+  const handleLogin = () => {
+    const foundUser = users.find(
+      (u) => u.username === username && u.password === password
+    );
+    if (!foundUser) return alert("Invalid credentials");
+
+    setUser(foundUser);
+    setUsername("");
+    setPassword("");
+  };
+
   const handleLogout = () => setUser(null);
 
-  // Create post
+  // --- POSTS ---
   const handleCreatePost = () => {
     if (!title || !content || !user) return;
 
@@ -55,6 +83,18 @@ export default function Home() {
     setTitle("");
     setContent("");
     setCategory("General");
+  };
+
+  const handleDeletePost = (id: number) => {
+    setPosts(posts.filter((post) => post.id !== id));
+  };
+
+  const handleEditPost = (id: number, newTitle: string, newContent: string) => {
+    setPosts(
+      posts.map((post) =>
+        post.id === id ? { ...post, title: newTitle, content: newContent } : post
+      )
+    );
   };
 
   // Like & Dislike
@@ -92,7 +132,7 @@ export default function Home() {
     );
   };
 
-  // Filter posts
+  // Search filter
   const filteredPosts = posts.filter(
     (post) =>
       post.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -101,24 +141,52 @@ export default function Home() {
   );
 
   return (
-    <div className="font-sans max-w-2xl mx-auto p-6 bg-blue-600 shadow-lg rounded-xl mt-10">
+    <div className="font-sans max-w-2xl mx-auto p-6 bg-blue-600 shadow-lg rounded-xl mt-10 text-white">
       <h1 className="text-4xl font-bold text-center mb-6">LET'S BLOG</h1>
 
+      {/* AUTH SECTION */}
       {!user ? (
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Login</h2>
-          <button
-            onClick={() => handleLogin("User1")}
-            className="bg-green-500 text-white px-4 py-2 rounded mr-2"
+          <h2 className="text-2xl font-semibold mb-4">
+            {isSignup ? "Signup" : "Login"}
+          </h2>
+          <input
+            type="text"
+            placeholder="Username"
+            className="border p-2 mb-2 rounded text-black w-full"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="border p-2 mb-2 rounded text-black w-full"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {isSignup ? (
+            <button
+              onClick={handleSignup}
+              className="bg-green-500 text-white px-4 py-2 rounded w-full"
+            >
+              Signup
+            </button>
+          ) : (
+            <button
+              onClick={handleLogin}
+              className="bg-green-500 text-white px-4 py-2 rounded w-full"
+            >
+              Login
+            </button>
+          )}
+          <p
+            className="mt-2 cursor-pointer underline"
+            onClick={() => setIsSignup(!isSignup)}
           >
-            Login as User1
-          </button>
-          <button
-            onClick={() => handleLogin("User2")}
-            className="bg-green-500 text-white px-4 py-2 rounded"
-          >
-            Login as User2
-          </button>
+            {isSignup
+              ? "Already have an account? Login"
+              : "New user? Signup here"}
+          </p>
         </div>
       ) : (
         <div className="mb-6">
@@ -132,87 +200,116 @@ export default function Home() {
         </div>
       )}
 
+      {/* CREATE POST */}
       {user && (
         <div className="mb-8">
           <h3 className="text-2xl font-semibold mb-3">Create a Post</h3>
           <input
-            type="text font-bold"
+            type="text"
             placeholder="Title"
-            className="border p-2 w-full mb-2 rounded font-sans font-bold"
+            className="border p-2 w-full mb-2 rounded text-black font-bold"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <textarea
             placeholder="Content"
-            className="border p-2 w-full mb-2 rounded font-sans font-bold"
+            className="border p-2 w-full mb-2 rounded text-black"
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
           <select
-            className="border p-2 w-full mb-2 rounded"
+            className="border p-2 w-full mb-2 rounded text-black"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            <option value="General" className="bg-blue-400 text-white font-sans font-semibold">General</option>
-            <option value="Tech " className="bg-blue-400 text-white font-sans font-semibold">Tech</option>
-            <option value="Life" className="bg-blue-400 text-white font-sans font-semibold">Life</option>
-            <option value="Travel" className="bg-blue-400 text-white font-sans font-semibold">Travel</option>
+            <option value="General">General</option>
+            <option value="Tech">Tech</option>
+            <option value="Life">Life</option>
+            <option value="Travel">Travel</option>
           </select>
           <button
             onClick={handleCreatePost}
-            className="bg-blue-500 text-white px-4 py-2 rounded w-full font-sans font-bold"
+            className="bg-blue-500 text-white px-4 py-2 rounded w-full font-bold"
           >
             Post
           </button>
         </div>
       )}
 
-      <div className="mb-6 text-white font-sans font-semibold">
+      {/* SEARCH */}
+      <div className="mb-6">
         <input
           type="text"
           placeholder="Search posts..."
-          className="border p-2 w-full rounded"
+          className="border p-2 w-full rounded text-black"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
-      <h3 className="text-2xl text-white font-semibold mb-4">All Posts</h3>
+      {/* POSTS */}
+      <h3 className="text-2xl font-semibold mb-4">All Posts</h3>
       {filteredPosts.length === 0 ? (
-        <p className="text-white">No posts found.</p>
+        <p>No posts found.</p>
       ) : (
         filteredPosts.map((post) => (
           <div
             key={post.id}
-            className="border p-4 rounded mb-4 shadow-sm bg-blue-500 text-white"
+            className="border p-4 rounded mb-4 shadow-sm bg-blue-500"
           >
             <h4 className="text-xl font-bold">{post.title}</h4>
-            <p className="text-white mb-2">{post.content}</p>
-            <p className="text-sm text-white">
+            <p className="mb-2">{post.content}</p>
+            <p className="text-sm">
               By: {post.author} | Category: {post.category}
             </p>
+
+            {/* Like/Dislike */}
             <div className="mt-2 flex gap-2">
               <button
                 onClick={() => handleLike(post.id)}
                 className="bg-green-500 text-white px-2 py-1 rounded"
               >
                 {post.likes}
-                <img src="assets\likes.png" alt="" />
+                <img src="assets\Likes.png" alt="" />
               </button>
               <button
                 onClick={() => handleDislike(post.id)}
                 className="bg-red-500 text-white px-2 py-1 rounded"
               >
-                {post.dislikes}
-                <img src="assets\Dislikes.png" alt="" />
+                  {post.dislikes}
+                  <img src="assets\Dislikes.png" alt="" />
               </button>
             </div>
 
-            {/* Comment Section */}
+            {/* Author-only edit/delete */}
+            {user?.username === post.author && (
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() =>
+                    handleEditPost(
+                      post.id,
+                      prompt("New title:", post.title) || post.title,
+                      prompt("New content:", post.content) || post.content
+                    )
+                  }
+                  className="bg-yellow-400 text-black px-2 py-1 rounded"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeletePost(post.id)}
+                  className="bg-red-600 text-white px-2 py-1 rounded"
+                >
+                  🗑 Delete
+                </button>
+              </div>
+            )}
+
+            {/* Comments */}
             <div className="mt-4">
-              <h5 className="font-semibold bg-blue-500 text-white">Comments</h5>
+              <h5 className="font-semibold">Comments</h5>
               {post.comments.length === 0 ? (
-                <p className="text-sm text-white bg-blue-500">No comments yet.</p>
+                <p className="text-sm">No comments yet.</p>
               ) : (
                 <ul className="mt-2 space-y-1">
                   {post.comments.map((comment) => (
@@ -229,10 +326,13 @@ export default function Home() {
                   <input
                     type="text"
                     placeholder="Write a comment..."
-                    className="border p-1 flex-1 rounded"
+                    className="border p-1 flex-1 rounded text-black"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        handleAddComment(post.id, (e.target as HTMLInputElement).value);
+                        handleAddComment(
+                          post.id,
+                          (e.target as HTMLInputElement).value
+                        );
                         (e.target as HTMLInputElement).value = "";
                       }
                     }}
